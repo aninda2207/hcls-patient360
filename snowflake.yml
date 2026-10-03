@@ -1,0 +1,27 @@
+definition_version: 2
+entities:
+  hcls_patient360:
+    type: streamlit
+    identifier:
+      name: HCLS_PATIENT360_APP
+      database: HCLS_PATIENT360
+      schema: PUBLIC
+    query_warehouse: COMPUTE_WH
+    runtime_name: SYSTEM$ST_CONTAINER_RUNTIME_PY3_11
+    main_file: streamlit_app.py
+    artifacts:
+      - streamlit_app.py
+      - pyproject.toml
+      - src/data_loader.py
+      - src/risk_scoring.py
+      - src/evidence_retrieval.py
+      - src/care_gaps.py
+      - pages/1_patient_360.py
+      - pages/2_clinical_qa.py
+      - pages/3_care_actions.py
+      - pages/4_upload_document.py
+      - pages/5_compare_patients.py
+      - pages/6_audit_log.py
+      - pages/7_add_patient.py
+      - static/styles.css
+      - scripts/generate_patient.py
