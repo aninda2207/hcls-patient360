@@ -2,11 +2,19 @@ import pandas as pd
 import streamlit as st
 import os
 import json
-import snowflake.connector
 
 
 @st.cache_resource
 def get_connection():
+    # In Streamlit-in-Snowflake, use the provided session connection
+    try:
+        from snowflake.snowpark.context import get_active_session
+        session = get_active_session()
+        return session.connection
+    except Exception:
+        pass
+    # Local development: use snowflake.connector with connection name
+    import snowflake.connector
     conn_name = os.getenv("SNOWFLAKE_DEFAULT_CONNECTION_NAME") or "default"
     return snowflake.connector.connect(
         connection_name=conn_name,
@@ -14,7 +22,25 @@ def get_connection():
     )
 
 
+def _bind(sql, params):
+    """Convert %s placeholders to :N numeric bind variables."""
+    if not params:
+        return sql, params
+    i = 0
+    out = []
+    for ch_idx in range(len(sql)):
+        if sql[ch_idx:ch_idx+2] == "%s":
+            i += 1
+            out.append(f":{i}")
+        elif ch_idx > 0 and sql[ch_idx-1:ch_idx+1] == "%s":
+            continue
+        else:
+            out.append(sql[ch_idx])
+    return "".join(out), params
+
+
 def run_query(sql, params=None):
+    sql, params = _bind(sql, params)
     with get_connection().cursor() as cur:
         cur.execute("USE DATABASE HCLS_PATIENT360")
         cur.execute("USE SCHEMA PUBLIC")
@@ -135,14 +161,17 @@ def get_discharge_summaries(patient_id):
 
 def log_audit_event(action, patient_id=None, details=None, user_id="care_coordinator"):
     try:
+        sql = """
+            INSERT INTO AUDIT_LOG (USER_ID, ACTION, PATIENT_ID, DETAILS, SESSION_ID)
+            VALUES (%s, %s, %s, PARSE_JSON(%s), %s)
+        """
+        params = [user_id, action, patient_id,
+                  json.dumps(details) if details else None,
+                  st.session_state.get("_session_id", "unknown")]
+        sql, params = _bind(sql, params)
         with get_connection().cursor() as cur:
             cur.execute("USE DATABASE HCLS_PATIENT360")
             cur.execute("USE SCHEMA PUBLIC")
-            cur.execute("""
-                INSERT INTO AUDIT_LOG (USER_ID, ACTION, PATIENT_ID, DETAILS, SESSION_ID)
-                VALUES (%s, %s, %s, PARSE_JSON(%s), %s)
-            """, [user_id, action, patient_id,
-                  json.dumps(details) if details else None,
-                  st.session_state.get("_session_id", "unknown")])
+            cur.execute(sql, params)
     except Exception:
         pass

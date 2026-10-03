@@ -11,7 +11,7 @@ if css_path.exists():
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-from src.data_loader import run_query, get_connection
+from src.data_loader import run_query, get_connection, _bind
 
 st.markdown("## :material/upload_file: Upload Clinical Document")
 st.caption("Upload prescriptions, clinical notes, or discharge summaries for AI-powered extraction.")
@@ -107,22 +107,25 @@ if uploaded_file is not None:
 
             if doc_type in ("Prescription", "Clinical Note", "Lab Report", "Other"):
                 note_id = f"N{abs(hash(uploaded_file.name)) % 100000:05d}"
-                cur.execute("""
+                sql, params = _bind("""
                     INSERT INTO CLINICAL_NOTES (NOTE_ID, PATIENT_ID, NOTE_TYPE, RAW_TEXT, PARSED_JSON)
                     VALUES (%s, %s, %s, %s, PARSE_JSON(%s))
                 """, [note_id, patient_id, doc_type, raw_text, json.dumps(parsed_data)])
+                cur.execute(sql, params)
             elif doc_type == "Discharge Summary":
                 summary_id = f"DS{abs(hash(uploaded_file.name)) % 100000:05d}"
-                cur.execute("""
+                sql, params = _bind("""
                     INSERT INTO DISCHARGE_SUMMARIES (SUMMARY_ID, PATIENT_ID, RAW_TEXT, PARSED_JSON)
                     VALUES (%s, %s, %s, PARSE_JSON(%s))
                 """, [summary_id, patient_id, raw_text, json.dumps(parsed_data)])
+                cur.execute(sql, params)
             elif doc_type == "Regulatory Filing":
                 filing_id = f"RF{abs(hash(uploaded_file.name)) % 100000:05d}"
-                cur.execute("""
+                sql, params = _bind("""
                     INSERT INTO REGULATORY_FILINGS (FILING_ID, PATIENT_ID, FILING_TYPE, RAW_TEXT, PARSED_JSON)
                     VALUES (%s, %s, %s, %s, PARSE_JSON(%s))
                 """, [filing_id, patient_id, "Uploaded Filing", raw_text, json.dumps(parsed_data)])
+                cur.execute(sql, params)
 
             from src.data_loader import log_audit_event
             log_audit_event("UPLOAD_DOCUMENT", patient_id=patient_id,

@@ -11,7 +11,12 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-from src.data_loader import get_connection, log_audit_event
+from src.data_loader import get_connection, log_audit_event, _bind
+
+
+def _exec(cur, sql, params):
+    sql, params = _bind(sql, params)
+    cur.execute(sql, params)
 
 st.markdown("## :material/person_add: Add New Patient")
 st.caption("Enter patient details manually. All fields marked with * are required.")
@@ -446,7 +451,7 @@ with col_save:
 
                     patient_id = f"P{random.randint(10000, 99999)}"
 
-                    cur.execute("""
+                    _exec(cur, """
                         INSERT INTO PATIENTS (PATIENT_ID, FIRST_NAME, LAST_NAME, AGE, GENDER,
                                               ETHNICITY, REGION, INSURANCE_TYPE)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -457,7 +462,7 @@ with col_save:
                     for enc in st.session_state.encounters:
                         eid = enc["encounter_id"]
                         enc_id_list.append(eid)
-                        cur.execute("""
+                        _exec(cur, """
                             INSERT INTO ENCOUNTERS (ENCOUNTER_ID, PATIENT_ID, ENCOUNTER_DATE,
                                                      ENCOUNTER_TYPE, DEPARTMENT, LENGTH_OF_STAY)
                             VALUES (%s, %s, %s, %s, %s, %s)
@@ -467,7 +472,7 @@ with col_save:
 
                     for dx in st.session_state.diagnoses:
                         enc_id = dx.get("encounter_id") or (enc_id_list[0] if enc_id_list else None)
-                        cur.execute("""
+                        _exec(cur, """
                             INSERT INTO DIAGNOSES (DIAGNOSIS_ID, ENCOUNTER_ID, ICD10_CODE,
                                                    DESCRIPTION, SEVERITY)
                             VALUES (%s, %s, %s, %s, %s)
@@ -475,7 +480,7 @@ with col_save:
                               dx["code"], dx["description"], dx["severity"]])
 
                     for med in st.session_state.medications:
-                        cur.execute("""
+                        _exec(cur, """
                             INSERT INTO MEDICATIONS (MEDICATION_ID, PATIENT_ID, DRUG_NAME,
                                                       DOSAGE, START_DATE, END_DATE, ADHERENCE)
                             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -484,7 +489,7 @@ with col_save:
                               med["start_date"], med["end_date"], med["adherence"]])
 
                     for lab in st.session_state.labs:
-                        cur.execute("""
+                        _exec(cur, """
                             INSERT INTO LAB_RESULTS (LAB_ID, PATIENT_ID, TEST_NAME,
                                                       RESULT_VALUE, UNIT, REFERENCE_RANGE,
                                                       LAB_DATE, ABNORMAL_FLAG)
@@ -494,7 +499,7 @@ with col_save:
                               lab["reference_range"], lab["lab_date"], lab["abnormal_flag"]])
 
                     for claim in st.session_state.claims:
-                        cur.execute("""
+                        _exec(cur, """
                             INSERT INTO CLAIMS (CLAIM_ID, PATIENT_ID, CLAIM_TYPE, AMOUNT,
                                                 STATUS, DENIAL_REASON, CLAIM_DATE)
                             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -503,7 +508,7 @@ with col_save:
                               claim.get("denial_reason"), claim["claim_date"]])
 
                     for note in st.session_state.notes:
-                        cur.execute("""
+                        _exec(cur, """
                             INSERT INTO CLINICAL_NOTES (NOTE_ID, PATIENT_ID, ENCOUNTER_ID,
                                                          NOTE_TYPE, RAW_TEXT, PARSED_JSON)
                             VALUES (%s, %s, %s, %s, %s, NULL)
