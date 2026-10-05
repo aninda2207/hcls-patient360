@@ -4,6 +4,7 @@ import json
 import random
 from datetime import datetime, timedelta
 import os
+import re
 
 FIRST_NAMES = ["James", "Mary", "Robert", "Patricia", "John", "Jennifer",
                "Michael", "Linda", "David", "Elizabeth", "William", "Barbara",
@@ -55,6 +56,12 @@ ENCOUNTER_TYPES = ["Emergency", "Inpatient", "Outpatient", "Observation", "Teleh
 DEPARTMENTS = ["Primary Care", "Cardiology", "Emergency", "Surgery", "Oncology", "Radiology"]
 
 
+def _execute(cur, sql, params):
+    """Run with numeric binds (:1, :2, ...) so it works on every connection type."""
+    counter = iter(range(1, len(params) + 1))
+    cur.execute(re.sub(r"%s", lambda _: f":{next(counter)}", sql), params)
+
+
 def generate_and_insert(conn=None):
     owns_conn = conn is None
     if owns_conn:
@@ -62,6 +69,7 @@ def generate_and_insert(conn=None):
         conn = snowflake.connector.connect(
             connection_name=conn_name,
             client_store_temporary_credential=False,
+            paramstyle="numeric",
         )
     cur = conn.cursor()
     cur.execute("USE DATABASE HCLS_PATIENT360")
@@ -73,7 +81,7 @@ def generate_and_insert(conn=None):
     age = random.randint(25, 92)
     gender = random.choice(GENDERS)
 
-    cur.execute("""
+    _execute(cur, """
         INSERT INTO PATIENTS (PATIENT_ID, FIRST_NAME, LAST_NAME, AGE, GENDER, ETHNICITY, REGION, INSURANCE_TYPE)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """, [pid, fname, lname, age, gender,
@@ -87,7 +95,7 @@ def generate_and_insert(conn=None):
         enc_ids.append(eid)
         etype = random.choice(ENCOUNTER_TYPES)
         los = random.randint(1, 12) if etype == "Inpatient" else 0
-        cur.execute("""
+        _execute(cur, """
             INSERT INTO ENCOUNTERS (ENCOUNTER_ID, PATIENT_ID, ENCOUNTER_DATE, ENCOUNTER_TYPE,
                                     PROVIDER_ID, DEPARTMENT, LENGTH_OF_STAY)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -98,7 +106,7 @@ def generate_and_insert(conn=None):
     # Diagnoses
     patient_dx = random.sample(DIAGNOSES, random.randint(2, 6))
     for code, desc, _ in patient_dx:
-        cur.execute("""
+        _execute(cur, """
             INSERT INTO DIAGNOSES (DIAGNOSIS_ID, ENCOUNTER_ID, ICD10_CODE, DESCRIPTION, SEVERITY)
             VALUES (%s, %s, %s, %s, %s)
         """, [f"D{random.randint(100000, 999999)}", random.choice(enc_ids),
@@ -108,7 +116,7 @@ def generate_and_insert(conn=None):
     patient_meds = random.sample(MEDICATIONS, random.randint(2, 6))
     for drug, dosage in patient_meds:
         end = None if random.random() > 0.3 else (datetime.now() - timedelta(days=random.randint(1, 60))).strftime("%Y-%m-%d")
-        cur.execute("""
+        _execute(cur, """
             INSERT INTO MEDICATIONS (MEDICATION_ID, PATIENT_ID, DRUG_NAME, DOSAGE, START_DATE, END_DATE, ADHERENCE)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, [f"M{random.randint(100000, 999999)}", pid, drug, dosage,
@@ -131,7 +139,7 @@ def generate_and_insert(conn=None):
             abnormal = "H"
         elif ref.startswith(">") and val < float(ref[1:]):
             abnormal = "L"
-        cur.execute("""
+        _execute(cur, """
             INSERT INTO LAB_RESULTS (LAB_ID, PATIENT_ID, TEST_NAME, RESULT_VALUE, UNIT,
                                      REFERENCE_RANGE, LAB_DATE, ABNORMAL_FLAG)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -143,7 +151,7 @@ def generate_and_insert(conn=None):
         status = random.choice(["Paid", "Paid", "Paid", "Denied", "Pending"])
         denial = random.choice(["Prior authorization not obtained", "Service not covered",
                                 "Duplicate claim"]) if status == "Denied" else None
-        cur.execute("""
+        _execute(cur, """
             INSERT INTO CLAIMS (CLAIM_ID, PATIENT_ID, CLAIM_TYPE, AMOUNT, STATUS, DENIAL_REASON, CLAIM_DATE)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, [f"CL{random.randint(100000, 999999)}", pid,
@@ -162,13 +170,13 @@ def generate_and_insert(conn=None):
         f"ASSESSMENT: {patient_dx[0][1]} - stable management\n"
         f"PLAN: Continue current regimen. Follow up in 3 months. Recheck labs."
     )
-    cur.execute("""
+    _execute(cur, """
         INSERT INTO CLINICAL_NOTES (NOTE_ID, PATIENT_ID, ENCOUNTER_ID, NOTE_TYPE, RAW_TEXT, PARSED_JSON)
         VALUES (%s, %s, %s, %s, %s, NULL)
     """, [f"N{random.randint(100000, 999999)}", pid, random.choice(enc_ids), "Progress Note", note_text])
 
     # Discharge summary (if any inpatient)
-    cur.execute("""
+    _execute(cur, """
         INSERT INTO DISCHARGE_SUMMARIES (SUMMARY_ID, PATIENT_ID, ENCOUNTER_ID, RAW_TEXT, PARSED_JSON)
         VALUES (%s, %s, %s, %s, NULL)
     """, [f"DS{random.randint(100000, 999999)}", pid, random.choice(enc_ids),
@@ -191,7 +199,7 @@ def generate_and_insert(conn=None):
         f"Current medications: {', '.join([m[0] for m in patient_meds])}\n\n"
         f"RECOMMENDATION: Approve {filing_type.lower()} for continued care."
     )
-    cur.execute("""
+    _execute(cur, """
         INSERT INTO REGULATORY_FILINGS (FILING_ID, PATIENT_ID, FILING_TYPE, RAW_TEXT, PARSED_JSON)
         VALUES (%s, %s, %s, %s, NULL)
     """, [f"RF{random.randint(100000, 999999)}", pid, filing_type, filing_text])

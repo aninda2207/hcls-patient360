@@ -1,44 +1,35 @@
 import streamlit as st
-import pathlib
 import os
 import tempfile
 import json
 
-st.set_page_config(page_title="Upload Document", page_icon=":material/upload_file:", layout="wide")
-
-css_path = pathlib.Path(__file__).parent.parent / "static" / "styles.css"
-if css_path.exists():
-    with open(css_path) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
 from src.data_loader import run_query, get_connection, _bind
+from src.ui import page_header, patient_options as build_options
 
-st.markdown("## :material/upload_file: Upload Clinical Document")
-st.caption("Upload prescriptions, clinical notes, or discharge summaries for AI-powered extraction.")
+page_header("Upload Document", "Upload prescriptions, clinical notes, or discharge summaries for AI-powered extraction.",
+            icon="upload_file")
 
 patients = run_query("SELECT PATIENT_ID, FIRST_NAME, LAST_NAME FROM PATIENTS ORDER BY PATIENT_ID")
-patient_options = {
-    f"{r['patient_id']} — {r['first_name']} {r['last_name']}": r["patient_id"]
-    for _, r in patients.iterrows()
-}
+patient_options = build_options(patients, with_tier=False)
 
-selected = st.selectbox("Select a patient", options=list(patient_options.keys()), key="upload_patient")
+with st.container(border=True):
+    c1, c2 = st.columns(2)
+    selected = c1.selectbox("Select a patient", options=list(patient_options.keys()), key="upload_patient")
+    doc_type = c2.selectbox(
+        "Document Type",
+        ["Prescription", "Clinical Note", "Discharge Summary", "Regulatory Filing", "Lab Report", "Other"],
+        key="doc_type",
+    )
+    uploaded_file = st.file_uploader(
+        "Upload document",
+        type=["pdf", "png", "jpg", "jpeg", "txt", "docx"],
+        key="file_uploader",
+    )
+
 if not selected:
     st.stop()
 
 patient_id = patient_options[selected]
-
-doc_type = st.selectbox(
-    "Document Type",
-    ["Prescription", "Clinical Note", "Discharge Summary", "Regulatory Filing", "Lab Report", "Other"],
-    key="doc_type",
-)
-
-uploaded_file = st.file_uploader(
-    "Upload document",
-    type=["pdf", "png", "jpg", "jpeg", "txt", "docx"],
-    key="file_uploader",
-)
 
 if uploaded_file is not None:
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp:
@@ -79,10 +70,10 @@ if uploaded_file is not None:
         raw_text = f"[File: {uploaded_file.name}] - Document parsing would extract text."
         st.info("Document upload detected. In production, document parser would extract text.")
 
-    with st.expander("Document Preview", expanded=True):
+    with st.expander("Document Preview", expanded=True, icon=":material/preview:"):
         st.text(raw_text[:2000])
 
-    if st.button(":material/auto_fix_high: Parse & Extract Data", use_container_width=True):
+    if st.button(":material/auto_fix_high: Parse & Extract Data", type="primary", width="stretch"):
         with st.spinner("Parsing document..."):
             parsed_data = {
                 "doc_type": doc_type,

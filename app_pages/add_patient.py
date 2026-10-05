@@ -1,30 +1,24 @@
 import streamlit as st
 import json
-import os
 import random
 from datetime import datetime
 
-st.set_page_config(page_title="Add New Patient", page_icon=":material/person_add:", layout="wide")
-
-css_path = os.path.join(os.path.dirname(__file__), "..", "static", "styles.css")
-if os.path.exists(css_path):
-    with open(css_path) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
 from src.data_loader import get_connection, log_audit_event, _bind
+from src.ui import page_header
 
 
 def _exec(cur, sql, params):
     sql, params = _bind(sql, params)
     cur.execute(sql, params)
 
-st.markdown("## :material/person_add: Add New Patient")
-st.caption("Enter patient details manually. All fields marked with * are required.")
+
+page_header("Add Patient", "Enter patient details manually. All fields marked with * are required.",
+            icon="person_add")
 
 # ============================================================
 # SECTION 1: Demographics
 # ============================================================
-st.markdown("### Demographics")
+st.markdown("#### :material/badge: Demographics")
 
 with st.container(border=True):
     d1, d2, d3 = st.columns(3)
@@ -58,7 +52,7 @@ with st.container(border=True):
 # ============================================================
 # SECTION 2: Encounters
 # ============================================================
-st.markdown("### Encounters")
+st.markdown("#### :material/calendar_month: Encounters")
 
 with st.container(border=True):
     st.caption("Add recent encounters for this patient. Diagnoses are linked to encounters.")
@@ -66,7 +60,7 @@ with st.container(border=True):
     if "encounters" not in st.session_state:
         st.session_state.encounters = []
 
-    col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns([2, 2, 2, 1, 1])
+    col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns([2, 2, 2, 1, 1], vertical_alignment="bottom")
     with col_e1:
         enc_type = st.selectbox("Encounter Type", ["", "Emergency", "Inpatient", "Outpatient",
                                                      "Observation", "Telehealth"], key="enc_type")
@@ -79,8 +73,7 @@ with st.container(border=True):
     with col_e4:
         enc_los = st.number_input("Length of Stay (days)", value=0, min_value=0, key="enc_los")
     with col_e5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_enc", use_container_width=True):
+        if st.button(":material/add: Add", key="add_enc", width="stretch"):
             if enc_type and enc_dept:
                 st.session_state.encounters.append({
                     "encounter_id": f"E{random.randint(100000, 999999)}",
@@ -106,7 +99,7 @@ with st.container(border=True):
 # ============================================================
 # SECTION 3: Diagnoses
 # ============================================================
-st.markdown("### Diagnoses")
+st.markdown("#### :material/diagnosis: Diagnoses")
 
 with st.container(border=True):
     st.caption("Add all active diagnoses. Each diagnosis is linked to an encounter.")
@@ -137,7 +130,7 @@ with st.container(border=True):
     enc_labels = [f"{e['encounter_id']} — {e['encounter_type']} ({e['encounter_date']})"
                   for e in st.session_state.encounters]
 
-    col_dx1, col_dx2, col_dx3, col_dx4, col_dx5 = st.columns([3, 2, 2, 2, 1])
+    col_dx1, col_dx2, col_dx3, col_dx4, col_dx5 = st.columns([3, 2, 2, 2, 1], vertical_alignment="bottom")
     with col_dx1:
         dx_code = st.selectbox("ICD-10 Code", [""] + [f"{code} — {desc}" for code, desc in icd10_options], key="dx_code")
     with col_dx2:
@@ -147,8 +140,7 @@ with st.container(border=True):
     with col_dx4:
         dx_description = st.text_input("Description (optional)", placeholder="Custom description", key="dx_desc")
     with col_dx5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_dx", use_container_width=True):
+        if st.button(":material/add: Add", key="add_dx", width="stretch"):
             if dx_code and dx_severity:
                 code = dx_code.split(" — ")[0]
                 desc = dx_description or (dx_code.split(" — ")[1] if " — " in dx_code else dx_code)
@@ -179,7 +171,7 @@ with st.container(border=True):
 # ============================================================
 # SECTION 4: Medications
 # ============================================================
-st.markdown("### Medications")
+st.markdown("#### :material/medication: Medications")
 
 with st.container(border=True):
     st.caption("Add all current medications for this patient")
@@ -187,7 +179,7 @@ with st.container(border=True):
     if "medications" not in st.session_state:
         st.session_state.medications = []
 
-    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns([2, 2, 2, 1, 1])
+    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns([2, 2, 2, 1, 1], vertical_alignment="bottom")
     with col_m1:
         med_name = st.text_input("Drug Name *", placeholder="e.g., Metformin", key="med_name")
     with col_m2:
@@ -197,8 +189,7 @@ with st.container(border=True):
     with col_m4:
         med_active = st.checkbox("Active", value=True, key="med_active")
     with col_m5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_med", use_container_width=True):
+        if st.button(":material/add: Add", key="add_med", width="stretch"):
             if med_name and med_dosage:
                 st.session_state.medications.append({
                     "drug_name": med_name,
@@ -224,7 +215,7 @@ with st.container(border=True):
 # ============================================================
 # SECTION 5: Lab Results
 # ============================================================
-st.markdown("### Lab Results")
+st.markdown("#### :material/labs: Lab Results")
 
 with st.container(border=True):
     st.caption("Add recent lab results for this patient")
@@ -248,7 +239,7 @@ with st.container(border=True):
     ]
     lab_lookup = {name: (unit, ref) for name, unit, ref in lab_options}
 
-    col_l1, col_l2, col_l3, col_l4, col_l5 = st.columns([2, 1, 1, 1, 1])
+    col_l1, col_l2, col_l3, col_l4, col_l5 = st.columns([2, 1, 1, 1, 1], vertical_alignment="bottom")
     with col_l1:
         lab_test = st.selectbox("Test Name", [""] + [l[0] for l in lab_options], key="lab_test")
     with col_l2:
@@ -259,8 +250,7 @@ with st.container(border=True):
     with col_l4:
         lab_date = st.date_input("Lab Date", key="lab_date")
     with col_l5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_lab", use_container_width=True):
+        if st.button(":material/add: Add", key="add_lab", width="stretch"):
             if lab_test and lab_value:
                 ref = lab_lookup.get(lab_test, ("", ""))[1]
                 abnormal = None
@@ -313,7 +303,7 @@ with st.container(border=True):
 # ============================================================
 # SECTION 6: Claims
 # ============================================================
-st.markdown("### Claims")
+st.markdown("#### :material/receipt_long: Claims")
 
 with st.container(border=True):
     st.caption("Add insurance claims for this patient")
@@ -321,7 +311,7 @@ with st.container(border=True):
     if "claims" not in st.session_state:
         st.session_state.claims = []
 
-    col_c1, col_c2, col_c3, col_c4, col_c5 = st.columns([2, 1, 1, 2, 1])
+    col_c1, col_c2, col_c3, col_c4, col_c5 = st.columns([2, 1, 1, 2, 1], vertical_alignment="bottom")
     with col_c1:
         claim_type = st.selectbox("Claim Type", ["", "Professional", "Institutional",
                                                    "Pharmacy", "DME"], key="claim_type")
@@ -332,8 +322,7 @@ with st.container(border=True):
     with col_c4:
         claim_date = st.date_input("Claim Date", key="claim_date")
     with col_c5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_claim", use_container_width=True):
+        if st.button(":material/add: Add", key="add_claim", width="stretch"):
             if claim_type and claim_status:
                 st.session_state.claims.append({
                     "claim_type": claim_type,
@@ -363,7 +352,7 @@ with st.container(border=True):
 # ============================================================
 # SECTION 7: Clinical Notes
 # ============================================================
-st.markdown("### Clinical Notes")
+st.markdown("#### :material/description: Clinical Notes")
 
 with st.container(border=True):
     st.caption("Add clinical notes for this patient")
@@ -379,7 +368,7 @@ with st.container(border=True):
         note_text = st.text_area("Note Content", height=100,
                                   placeholder="Enter clinical note text here...", key="note_text")
 
-    if st.button(":material/add: Add Note", key="add_note", use_container_width=True):
+    if st.button(":material/add: Add Note", key="add_note", width="stretch"):
         if note_type and note_text:
             st.session_state.notes.append({
                 "note_type": note_type,
@@ -417,11 +406,12 @@ if not st.session_state.get("diagnoses"):
     errors.append("At least one diagnosis is required")
 
 if errors:
-    st.warning("Please fix the following before submitting:")
-    for err in errors:
-        st.markdown(f"- {err}")
+    with st.container(border=True):
+        st.markdown(":orange-badge[:material/checklist: Before saving]")
+        for err in errors:
+            st.markdown(f"- {err}")
 
-with st.expander("Review All Entered Data", expanded=False):
+with st.expander("Review All Entered Data", expanded=False, icon=":material/fact_check:"):
     st.markdown(f"**Name:** {first_name} {last_name}")
     st.markdown(f"**DOB:** {date_of_birth} (Age: {age})")
     st.markdown(f"**Gender:** {gender}")
@@ -438,7 +428,7 @@ with st.expander("Review All Entered Data", expanded=False):
 col_save, col_clear = st.columns(2)
 
 with col_save:
-    if st.button(":material/save: Save Patient", type="primary", use_container_width=True):
+    if st.button(":material/save: Save Patient", type="primary", width="stretch"):
         if errors:
             st.error("Please fix all errors before saving.")
         else:
@@ -542,7 +532,7 @@ with col_save:
                     st.code(traceback.format_exc())
 
 with col_clear:
-    if st.button(":material/refresh: Clear Form", use_container_width=True):
+    if st.button(":material/refresh: Clear Form", width="stretch"):
         for key in ["diagnoses", "medications", "labs", "encounters", "claims", "notes"]:
             st.session_state[key] = []
         st.rerun()

@@ -1,208 +1,68 @@
-/* ===== Smooth scrolling ===== */
+/* Most styling comes from .streamlit/config.toml (theme + sidebar).
+   Keep this file to small refinements the theme can't express. */
+
 html {
     scroll-behavior: smooth;
 }
 
-/* ===== Metric cards ===== */
-div[data-testid="stMetric"] {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border: 1px solid #E2E8F0;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* Comfortable reading width and spacing */
+[data-testid="stMainBlockContainer"] {
+    padding-top: 2.25rem;
+    padding-bottom: 3rem;
+    max-width: 1400px;
 }
 
-div[data-testid="stMetric"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+/* Typography */
+h1, h2, h3, h4 {
+    color: #1A2B4A;
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
-/* ===== Sidebar — Dark Slate ===== */
-section[data-testid="stSidebar"] {
-    background: #0F172A;
-    color: #E2E8F0;
-    padding-top: 1.5rem;
+[data-testid="stCaptionContainer"] {
+    color: #64748B;
 }
 
-section[data-testid="stSidebar"] * {
-    color: #E2E8F0 !important;
+/* KPI cards (st.metric with border=True) */
+[data-testid="stMetric"] {
+    background: #FFFFFF;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-section[data-testid="stSidebar"] [data-testid="stSidebarNav"] a {
-    color: #94A3B8 !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    padding: 10px 16px !important;
-    border-radius: 8px !important;
-    margin: 2px 8px !important;
-    text-decoration: none !important;
-    transition: all 0.2s ease !important;
+[data-testid="stMetric"]:hover {
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
 }
 
-section[data-testid="stSidebar"] [data-testid="stSidebarNav"] a:hover {
-    color: #FFFFFF !important;
-    background: rgba(255, 255, 255, 0.08) !important;
+[data-testid="stMetricValue"] {
+    font-weight: 700;
 }
 
-section[data-testid="stSidebar"] [data-testid="stSidebarNav"] a[aria-current="page"] {
-    color: #FFFFFF !important;
-    background: #0B5FFF !important;
-    font-weight: 600 !important;
+/* Bordered containers read as white cards on the slate background */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #FFFFFF;
 }
 
-section[data-testid="stSidebar"] > div:first-child {
-    padding: 0 16px 16px 16px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-    margin-bottom: 12px !important;
-}
-
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] select {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    color: #E2E8F0 !important;
-    border-radius: 8px !important;
-}
-
-section[data-testid="stSidebar"] button {
-    background: #0B5FFF !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-}
-
-section[data-testid="stSidebar"] button:hover {
-    background: #0047CC !important;
-}
-
-section[data-testid="stSidebar"] hr {
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    margin: 12px 0 !important;
-}
-
-section[data-testid="stSidebar"] small,
-section[data-testid="stSidebar"] p {
-    color: #94A3B8 !important;
-    font-size: 12px !important;
-}
-
-/* ===== DataFrames ===== */
-div[data-testid="stDataFrame"] {
-    font-size: 13px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #E2E8F0;
-}
-
-/* ===== Tabs ===== */
-button[data-testid="stTab"] {
-    border-radius: 8px 8px 0 0 !important;
-    font-weight: 500 !important;
-}
-
-/* ===== Expanders ===== */
-details {
-    border-radius: 8px;
-    border: 1px solid #E2E8F0 !important;
-    background: white !important;
-}
-
-summary {
-    font-weight: 600 !important;
-    color: #1A2B4A !important;
-    padding: 12px !important;
-}
-
-/* ===== Card containers ===== */
-div[data-testid="stVerticalBlock"] > div {
-    border-radius: 8px;
-}
-
-/* ===== Alert boxes ===== */
-div[data-testid="stAlert"] {
-    border-radius: 8px !important;
-    border: none !important;
-}
-
-/* ===== Form inputs ===== */
-div[data-testid="stSelectbox"] > div > div {
-    border-radius: 8px !important;
-}
-
-div[data-testid="stTextInput"] > div > div > input,
-div[data-testid="stTextArea"] > div > div > textarea,
-div[data-testid="stDateInput"] > div > div > input,
-div[data-testid="stNumberInput"] > div > div > input {
-    border-radius: 8px !important;
-    border: 1px solid #CBD5E1 !important;
-    transition: border-color 0.2s ease !important;
-}
-
-div[data-testid="stTextInput"] > div > div > input:focus,
-div[data-testid="stTextArea"] > div > div > textarea:focus,
-div[data-testid="stDateInput"] > div > div > input:focus,
-div[data-testid="stNumberInput"] > div > div > input:focus {
-    border-color: #0B5FFF !important;
-    box-shadow: 0 0 0 3px rgba(11, 95, 255, 0.1) !important;
-}
-
-div[data-testid="stMultiSelect"] {
-    border-radius: 8px !important;
-}
-
-/* ===== Primary button ===== */
+/* Primary buttons */
 button[kind="primary"] {
-    background: #0B5FFF !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    padding: 12px 24px !important;
-    font-size: 16px !important;
+    font-weight: 600;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 button[kind="primary"]:hover {
-    background: #0047CC !important;
+    box-shadow: 0 4px 12px rgba(11, 95, 255, 0.28);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(11, 95, 255, 0.3);
 }
 
-/* ===== Checkbox ===== */
-div[data-testid="stCheckbox"] {
-    padding: 8px !important;
+/* Sidebar navigation section headers */
+[data-testid="stNavSectionHeader"] {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    color: #94A3B8;
 }
 
-/* ===== File uploader ===== */
-div[data-testid="stFileUploader"] {
-    border-radius: 8px !important;
-    border: 2px dashed #CBD5E1 !important;
-    background: #F8FAFC !important;
-}
-
-div[data-testid="stFileUploader"]:hover {
-    border-color: #0B5FFF !important;
-    background: #EFF6FF !important;
-}
-
-/* ===== Dividers ===== */
-hr {
-    border-color: #E2E8F0 !important;
-    margin: 16px 0 !important;
-}
-
-/* ===== Typography ===== */
-h1, h2, h3, h4 {
-    color: #1A2B4A !important;
-    font-weight: 700 !important;
-}
-
-a {
-    color: #0B5FFF !important;
-}
-
-/* ===== Scrollbar ===== */
+/* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;

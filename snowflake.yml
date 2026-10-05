@@ -17,12 +17,14 @@ entities:
       - src/evidence_retrieval.py
       - src/care_gaps.py
       - src/__init__.py
-      - pages/1_patient_360.py
-      - pages/2_clinical_qa.py
-      - pages/3_care_actions.py
-      - pages/4_upload_document.py
-      - pages/5_compare_patients.py
-      - pages/6_audit_log.py
-      - pages/7_add_patient.py
+      - src/ui.py
+      - app_pages/dashboard.py
+      - app_pages/patient_360.py
+      - app_pages/clinical_qa.py
+      - app_pages/care_actions.py
+      - app_pages/upload_document.py
+      - app_pages/compare_patients.py
+      - app_pages/audit_log.py
+      - app_pages/add_patient.py
       - static/styles.css
       - scripts/generate_patient.py
