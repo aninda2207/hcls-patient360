@@ -28,12 +28,14 @@ def get_connection():
             serialization.PrivateFormat.PKCS8,
             serialization.NoEncryption(),
         )
-        return snowflake.connector.connect(**cfg)
+        # _bind() emits :N placeholders, so use numeric paramstyle
+        return snowflake.connector.connect(paramstyle="numeric", **cfg)
     # Local development: use snowflake.connector with connection name
     conn_name = os.getenv("SNOWFLAKE_DEFAULT_CONNECTION_NAME") or "default"
     return snowflake.connector.connect(
         connection_name=conn_name,
         client_store_temporary_credential=False,
+        paramstyle="numeric",
     )
 
 
@@ -178,7 +180,7 @@ def log_audit_event(action, patient_id=None, details=None, user_id="care_coordin
     try:
         sql = """
             INSERT INTO AUDIT_LOG (USER_ID, ACTION, PATIENT_ID, DETAILS, SESSION_ID)
-            VALUES (%s, %s, %s, PARSE_JSON(%s), %s)
+            SELECT %s, %s, %s, PARSE_JSON(%s), %s
         """
         params = [user_id, action, patient_id,
                   json.dumps(details) if details else None,

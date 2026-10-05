@@ -109,21 +109,21 @@ if uploaded_file is not None:
                 note_id = f"N{abs(hash(uploaded_file.name)) % 100000:05d}"
                 sql, params = _bind("""
                     INSERT INTO CLINICAL_NOTES (NOTE_ID, PATIENT_ID, NOTE_TYPE, RAW_TEXT, PARSED_JSON)
-                    VALUES (%s, %s, %s, %s, PARSE_JSON(%s))
+                    SELECT %s, %s, %s, %s, PARSE_JSON(%s)
                 """, [note_id, patient_id, doc_type, raw_text, json.dumps(parsed_data)])
                 cur.execute(sql, params)
             elif doc_type == "Discharge Summary":
                 summary_id = f"DS{abs(hash(uploaded_file.name)) % 100000:05d}"
                 sql, params = _bind("""
                     INSERT INTO DISCHARGE_SUMMARIES (SUMMARY_ID, PATIENT_ID, RAW_TEXT, PARSED_JSON)
-                    VALUES (%s, %s, %s, PARSE_JSON(%s))
+                    SELECT %s, %s, %s, PARSE_JSON(%s)
                 """, [summary_id, patient_id, raw_text, json.dumps(parsed_data)])
                 cur.execute(sql, params)
             elif doc_type == "Regulatory Filing":
                 filing_id = f"RF{abs(hash(uploaded_file.name)) % 100000:05d}"
                 sql, params = _bind("""
                     INSERT INTO REGULATORY_FILINGS (FILING_ID, PATIENT_ID, FILING_TYPE, RAW_TEXT, PARSED_JSON)
-                    VALUES (%s, %s, %s, %s, PARSE_JSON(%s))
+                    SELECT %s, %s, %s, %s, PARSE_JSON(%s)
                 """, [filing_id, patient_id, "Uploaded Filing", raw_text, json.dumps(parsed_data)])
                 cur.execute(sql, params)
 
