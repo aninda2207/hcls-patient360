@@ -1,0 +1,8 @@
+streamlit>=1.48.0
+snowflake-connector-python>=3.12.0
+cryptography
+pandas
+numpy
+altair
+pdfplumber
+pillow

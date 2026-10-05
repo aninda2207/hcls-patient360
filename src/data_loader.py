@@ -13,8 +13,23 @@ def get_connection():
         return session.connection
     except Exception:
         pass
-    # Local development: use snowflake.connector with connection name
     import snowflake.connector
+    # Streamlit Community Cloud: key-pair credentials from st.secrets
+    try:
+        cfg = dict(st.secrets["snowflake"])
+    except Exception:
+        cfg = None
+    if cfg:
+        from cryptography.hazmat.primitives import serialization
+        pem = cfg.pop("private_key").encode()
+        key = serialization.load_pem_private_key(pem, password=None)
+        cfg["private_key"] = key.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        return snowflake.connector.connect(**cfg)
+    # Local development: use snowflake.connector with connection name
     conn_name = os.getenv("SNOWFLAKE_DEFAULT_CONNECTION_NAME") or "default"
     return snowflake.connector.connect(
         connection_name=conn_name,
