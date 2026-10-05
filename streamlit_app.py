@@ -11,7 +11,7 @@ st.set_page_config(
 css_path = pathlib.Path(__file__).parent / "static" / "styles.css"
 if css_path.exists():
     # st.html with only a <style> tag applies CSS without rendering any text
-    st.html(f"<style>{css_path.read_text()}</style>")
+    st.html(f"<style>{css_path.read_text(encoding="utf-8")}</style>")
 
 pages = {
     "Overview": [
@@ -30,9 +30,11 @@ pages = {
     ],
 }
 
-nav = st.navigation(pages)
+nav = st.navigation(pages, expanded=True)
 
 with st.sidebar:
+    st.html('<div class="sidebar-brand"><div class="logo">🩺</div><div>'
+            '<div class="t1">HCLS Patient 360</div><div class="t2">Care Coordinator Copilot</div></div></div>')
     st.caption(":material/shield: Synthetic data only — no real PHI")
 
 nav.run()

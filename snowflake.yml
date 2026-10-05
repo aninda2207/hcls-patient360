@@ -18,6 +18,7 @@ entities:
       - src/care_gaps.py
       - src/__init__.py
       - src/ui.py
+      - src/components.py
       - app_pages/dashboard.py
       - app_pages/patient_360.py
       - app_pages/clinical_qa.py

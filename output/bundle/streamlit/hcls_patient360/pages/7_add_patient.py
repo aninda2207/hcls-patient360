@@ -1,24 +1,27 @@
 import streamlit as st
 import json
+import os
 import random
 from datetime import datetime
 
-from src.data_loader import get_connection, log_audit_event, _bind
-from src.components import gap_card, page_title, render, section_header
+st.set_page_config(page_title="Add New Patient", page_icon=":material/person_add:", layout="wide")
 
+css_path = os.path.join(os.path.dirname(__file__), "..", "static", "styles.css")
+if os.path.exists(css_path):
+    with open(css_path) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-def _exec(cur, sql, params):
-    sql, params = _bind(sql, params)
-    cur.execute(sql, params)
+from src.data_loader import get_connection, log_audit_event
 
-
-render(page_title("Add Patient", "Enter patient details manually. All fields marked with * are required."))
+st.markdown("## :material/person_add: Add New Patient")
+st.caption("Enter patient details manually. All fields marked with * are required.")
 
 # ============================================================
 # SECTION 1: Demographics
 # ============================================================
-with st.container(key="card_demographics"):
-    render(section_header("👤", "Demographics", "Required: name, date of birth, gender"))
+st.markdown("### Demographics")
+
+with st.container(border=True):
     d1, d2, d3 = st.columns(3)
     with d1:
         first_name = st.text_input("First Name *", placeholder="e.g., John", key="first_name")
@@ -50,15 +53,15 @@ with st.container(key="card_demographics"):
 # ============================================================
 # SECTION 2: Encounters
 # ============================================================
-st.write("")
-with st.container(key="card_encounters"):
-    render(section_header("📅", "Encounters", "At least one required"))
+st.markdown("### Encounters")
+
+with st.container(border=True):
     st.caption("Add recent encounters for this patient. Diagnoses are linked to encounters.")
 
     if "encounters" not in st.session_state:
         st.session_state.encounters = []
 
-    col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns([2, 2, 2, 1, 1], vertical_alignment="bottom")
+    col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns([2, 2, 2, 1, 1])
     with col_e1:
         enc_type = st.selectbox("Encounter Type", ["", "Emergency", "Inpatient", "Outpatient",
                                                      "Observation", "Telehealth"], key="enc_type")
@@ -71,7 +74,8 @@ with st.container(key="card_encounters"):
     with col_e4:
         enc_los = st.number_input("Length of Stay (days)", value=0, min_value=0, key="enc_los")
     with col_e5:
-        if st.button(":material/add: Add", key="add_enc", width="stretch"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button(":material/add: Add", key="add_enc", use_container_width=True):
             if enc_type and enc_dept:
                 st.session_state.encounters.append({
                     "encounter_id": f"E{random.randint(100000, 999999)}",
@@ -97,9 +101,9 @@ with st.container(key="card_encounters"):
 # ============================================================
 # SECTION 3: Diagnoses
 # ============================================================
-st.write("")
-with st.container(key="card_diagnoses"):
-    render(section_header("🩺", "Diagnoses", "At least one required"))
+st.markdown("### Diagnoses")
+
+with st.container(border=True):
     st.caption("Add all active diagnoses. Each diagnosis is linked to an encounter.")
 
     icd10_options = [
@@ -128,7 +132,7 @@ with st.container(key="card_diagnoses"):
     enc_labels = [f"{e['encounter_id']} — {e['encounter_type']} ({e['encounter_date']})"
                   for e in st.session_state.encounters]
 
-    col_dx1, col_dx2, col_dx3, col_dx4, col_dx5 = st.columns([3, 2, 2, 2, 1], vertical_alignment="bottom")
+    col_dx1, col_dx2, col_dx3, col_dx4, col_dx5 = st.columns([3, 2, 2, 2, 1])
     with col_dx1:
         dx_code = st.selectbox("ICD-10 Code", [""] + [f"{code} — {desc}" for code, desc in icd10_options], key="dx_code")
     with col_dx2:
@@ -138,7 +142,8 @@ with st.container(key="card_diagnoses"):
     with col_dx4:
         dx_description = st.text_input("Description (optional)", placeholder="Custom description", key="dx_desc")
     with col_dx5:
-        if st.button(":material/add: Add", key="add_dx", width="stretch"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button(":material/add: Add", key="add_dx", use_container_width=True):
             if dx_code and dx_severity:
                 code = dx_code.split(" — ")[0]
                 desc = dx_description or (dx_code.split(" — ")[1] if " — " in dx_code else dx_code)
@@ -169,15 +174,15 @@ with st.container(key="card_diagnoses"):
 # ============================================================
 # SECTION 4: Medications
 # ============================================================
-st.write("")
-with st.container(key="card_medications"):
-    render(section_header("💊", "Medications"))
+st.markdown("### Medications")
+
+with st.container(border=True):
     st.caption("Add all current medications for this patient")
 
     if "medications" not in st.session_state:
         st.session_state.medications = []
 
-    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns([2, 2, 2, 1, 1], vertical_alignment="bottom")
+    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns([2, 2, 2, 1, 1])
     with col_m1:
         med_name = st.text_input("Drug Name *", placeholder="e.g., Metformin", key="med_name")
     with col_m2:
@@ -187,7 +192,8 @@ with st.container(key="card_medications"):
     with col_m4:
         med_active = st.checkbox("Active", value=True, key="med_active")
     with col_m5:
-        if st.button(":material/add: Add", key="add_med", width="stretch"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button(":material/add: Add", key="add_med", use_container_width=True):
             if med_name and med_dosage:
                 st.session_state.medications.append({
                     "drug_name": med_name,
@@ -213,9 +219,9 @@ with st.container(key="card_medications"):
 # ============================================================
 # SECTION 5: Lab Results
 # ============================================================
-st.write("")
-with st.container(key="card_labs"):
-    render(section_header("🔬", "Lab Results"))
+st.markdown("### Lab Results")
+
+with st.container(border=True):
     st.caption("Add recent lab results for this patient")
 
     if "labs" not in st.session_state:
@@ -237,7 +243,7 @@ with st.container(key="card_labs"):
     ]
     lab_lookup = {name: (unit, ref) for name, unit, ref in lab_options}
 
-    col_l1, col_l2, col_l3, col_l4, col_l5 = st.columns([2, 1, 1, 1, 1], vertical_alignment="bottom")
+    col_l1, col_l2, col_l3, col_l4, col_l5 = st.columns([2, 1, 1, 1, 1])
     with col_l1:
         lab_test = st.selectbox("Test Name", [""] + [l[0] for l in lab_options], key="lab_test")
     with col_l2:
@@ -248,7 +254,8 @@ with st.container(key="card_labs"):
     with col_l4:
         lab_date = st.date_input("Lab Date", key="lab_date")
     with col_l5:
-        if st.button(":material/add: Add", key="add_lab", width="stretch"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button(":material/add: Add", key="add_lab", use_container_width=True):
             if lab_test and lab_value:
                 ref = lab_lookup.get(lab_test, ("", ""))[1]
                 abnormal = None
@@ -301,15 +308,15 @@ with st.container(key="card_labs"):
 # ============================================================
 # SECTION 6: Claims
 # ============================================================
-st.write("")
-with st.container(key="card_claims"):
-    render(section_header("📋", "Claims"))
+st.markdown("### Claims")
+
+with st.container(border=True):
     st.caption("Add insurance claims for this patient")
 
     if "claims" not in st.session_state:
         st.session_state.claims = []
 
-    col_c1, col_c2, col_c3, col_c4, col_c5 = st.columns([2, 1, 1, 2, 1], vertical_alignment="bottom")
+    col_c1, col_c2, col_c3, col_c4, col_c5 = st.columns([2, 1, 1, 2, 1])
     with col_c1:
         claim_type = st.selectbox("Claim Type", ["", "Professional", "Institutional",
                                                    "Pharmacy", "DME"], key="claim_type")
@@ -320,7 +327,8 @@ with st.container(key="card_claims"):
     with col_c4:
         claim_date = st.date_input("Claim Date", key="claim_date")
     with col_c5:
-        if st.button(":material/add: Add", key="add_claim", width="stretch"):
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button(":material/add: Add", key="add_claim", use_container_width=True):
             if claim_type and claim_status:
                 st.session_state.claims.append({
                     "claim_type": claim_type,
@@ -350,9 +358,9 @@ with st.container(key="card_claims"):
 # ============================================================
 # SECTION 7: Clinical Notes
 # ============================================================
-st.write("")
-with st.container(key="card_notes"):
-    render(section_header("📝", "Clinical Notes"))
+st.markdown("### Clinical Notes")
+
+with st.container(border=True):
     st.caption("Add clinical notes for this patient")
 
     if "notes" not in st.session_state:
@@ -366,7 +374,7 @@ with st.container(key="card_notes"):
         note_text = st.text_area("Note Content", height=100,
                                   placeholder="Enter clinical note text here...", key="note_text")
 
-    if st.button(":material/add: Add Note", key="add_note", width="stretch"):
+    if st.button(":material/add: Add Note", key="add_note", use_container_width=True):
         if note_type and note_text:
             st.session_state.notes.append({
                 "note_type": note_type,
@@ -383,11 +391,6 @@ with st.container(key="card_notes"):
             if c3.button(":material/delete:", key=f"del_note_{i}"):
                 st.session_state.notes.pop(i)
                 st.rerun()
-
-st.write("")
-render(f'''<div class="card-container">{section_header("⚠️", "Care Gaps", icon_bg="#FFDAD6")}
-<div style="font-size:13px;color:#434655;">Care gaps are computed automatically by the <span class="citation-pill">CARE_GAPS</span>
-rule view from the diagnoses, medications, labs and encounters above. They appear right after saving.</div></div>''')
 
 # ============================================================
 # SUBMIT
@@ -409,12 +412,11 @@ if not st.session_state.get("diagnoses"):
     errors.append("At least one diagnosis is required")
 
 if errors:
-    with st.container(border=True):
-        st.markdown(":orange-badge[:material/checklist: Before saving]")
-        for err in errors:
-            st.markdown(f"- {err}")
+    st.warning("Please fix the following before submitting:")
+    for err in errors:
+        st.markdown(f"- {err}")
 
-with st.expander("Review All Entered Data", expanded=False, icon=":material/fact_check:"):
+with st.expander("Review All Entered Data", expanded=False):
     st.markdown(f"**Name:** {first_name} {last_name}")
     st.markdown(f"**DOB:** {date_of_birth} (Age: {age})")
     st.markdown(f"**Gender:** {gender}")
@@ -431,7 +433,7 @@ with st.expander("Review All Entered Data", expanded=False, icon=":material/fact
 col_save, col_clear = st.columns(2)
 
 with col_save:
-    if st.button(":material/save: Save Patient", type="primary", width="stretch"):
+    if st.button(":material/save: Save Patient", type="primary", use_container_width=True):
         if errors:
             st.error("Please fix all errors before saving.")
         else:
@@ -444,7 +446,7 @@ with col_save:
 
                     patient_id = f"P{random.randint(10000, 99999)}"
 
-                    _exec(cur, """
+                    cur.execute("""
                         INSERT INTO PATIENTS (PATIENT_ID, FIRST_NAME, LAST_NAME, AGE, GENDER,
                                               ETHNICITY, REGION, INSURANCE_TYPE)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
@@ -455,7 +457,7 @@ with col_save:
                     for enc in st.session_state.encounters:
                         eid = enc["encounter_id"]
                         enc_id_list.append(eid)
-                        _exec(cur, """
+                        cur.execute("""
                             INSERT INTO ENCOUNTERS (ENCOUNTER_ID, PATIENT_ID, ENCOUNTER_DATE,
                                                      ENCOUNTER_TYPE, DEPARTMENT, LENGTH_OF_STAY)
                             VALUES (%s, %s, %s, %s, %s, %s)
@@ -465,7 +467,7 @@ with col_save:
 
                     for dx in st.session_state.diagnoses:
                         enc_id = dx.get("encounter_id") or (enc_id_list[0] if enc_id_list else None)
-                        _exec(cur, """
+                        cur.execute("""
                             INSERT INTO DIAGNOSES (DIAGNOSIS_ID, ENCOUNTER_ID, ICD10_CODE,
                                                    DESCRIPTION, SEVERITY)
                             VALUES (%s, %s, %s, %s, %s)
@@ -473,7 +475,7 @@ with col_save:
                               dx["code"], dx["description"], dx["severity"]])
 
                     for med in st.session_state.medications:
-                        _exec(cur, """
+                        cur.execute("""
                             INSERT INTO MEDICATIONS (MEDICATION_ID, PATIENT_ID, DRUG_NAME,
                                                       DOSAGE, START_DATE, END_DATE, ADHERENCE)
                             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -482,7 +484,7 @@ with col_save:
                               med["start_date"], med["end_date"], med["adherence"]])
 
                     for lab in st.session_state.labs:
-                        _exec(cur, """
+                        cur.execute("""
                             INSERT INTO LAB_RESULTS (LAB_ID, PATIENT_ID, TEST_NAME,
                                                       RESULT_VALUE, UNIT, REFERENCE_RANGE,
                                                       LAB_DATE, ABNORMAL_FLAG)
@@ -492,7 +494,7 @@ with col_save:
                               lab["reference_range"], lab["lab_date"], lab["abnormal_flag"]])
 
                     for claim in st.session_state.claims:
-                        _exec(cur, """
+                        cur.execute("""
                             INSERT INTO CLAIMS (CLAIM_ID, PATIENT_ID, CLAIM_TYPE, AMOUNT,
                                                 STATUS, DENIAL_REASON, CLAIM_DATE)
                             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -501,7 +503,7 @@ with col_save:
                               claim.get("denial_reason"), claim["claim_date"]])
 
                     for note in st.session_state.notes:
-                        _exec(cur, """
+                        cur.execute("""
                             INSERT INTO CLINICAL_NOTES (NOTE_ID, PATIENT_ID, ENCOUNTER_ID,
                                                          NOTE_TYPE, RAW_TEXT, PARSED_JSON)
                             VALUES (%s, %s, %s, %s, %s, NULL)
@@ -524,12 +526,6 @@ with col_save:
                     st.session_state.claims = []
                     st.session_state.notes = []
 
-                    from src.data_loader import get_patient_care_gaps
-                    computed = get_patient_care_gaps(patient_id)
-                    if not computed.empty:
-                        render(section_header("⚠️", f"Computed Care Gaps ({len(computed)})", icon_bg="#FFDAD6"))
-                        render("".join(gap_card(g) for _, g in computed.iterrows()))
-
                     st.markdown("### Next Steps")
                     st.markdown(f"- View patient in **Patient 360** page (search for `{patient_id}`)")
                     st.markdown("- Ask questions in **Clinical Q&A** page")
@@ -541,7 +537,7 @@ with col_save:
                     st.code(traceback.format_exc())
 
 with col_clear:
-    if st.button(":material/refresh: Clear Form", width="stretch"):
+    if st.button(":material/refresh: Clear Form", use_container_width=True):
         for key in ["diagnoses", "medications", "labs", "encounters", "claims", "notes"]:
             st.session_state[key] = []
         st.rerun()
