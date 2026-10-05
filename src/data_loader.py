@@ -53,6 +53,8 @@ def _bind(sql, params):
             continue
         else:
             out.append(sql[ch_idx])
+    # numpy scalars (e.g. int64 from DataFrames) can't be bound; convert to Python types
+    params = [p.item() if hasattr(p, "item") and not isinstance(p, (str, bytes)) else p for p in params]
     return "".join(out), params
 
 

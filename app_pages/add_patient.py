@@ -1,32 +1,24 @@
 import streamlit as st
 import json
-import os
 import random
 from datetime import datetime
 
-st.set_page_config(page_title="Add New Patient", page_icon=":material/person_add:", layout="wide")
-
-css_path = os.path.join(os.path.dirname(__file__), "..", "static", "styles.css")
-if os.path.exists(css_path):
-    with open(css_path) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
 from src.data_loader import get_connection, log_audit_event, _bind
+from src.components import gap_card, page_title, render, section_header
 
 
 def _exec(cur, sql, params):
     sql, params = _bind(sql, params)
     cur.execute(sql, params)
 
-st.markdown("## :material/person_add: Add New Patient")
-st.caption("Enter patient details manually. All fields marked with * are required.")
+
+render(page_title("Add Patient", "Enter patient details manually. All fields marked with * are required."))
 
 # ============================================================
 # SECTION 1: Demographics
 # ============================================================
-st.markdown("### Demographics")
-
-with st.container(border=True):
+with st.container(key="card_demographics"):
+    render(section_header("👤", "Demographics", "Required: name, date of birth, gender"))
     d1, d2, d3 = st.columns(3)
     with d1:
         first_name = st.text_input("First Name *", placeholder="e.g., John", key="first_name")
@@ -58,15 +50,15 @@ with st.container(border=True):
 # ============================================================
 # SECTION 2: Encounters
 # ============================================================
-st.markdown("### Encounters")
-
-with st.container(border=True):
+st.write("")
+with st.container(key="card_encounters"):
+    render(section_header("📅", "Encounters", "At least one required"))
     st.caption("Add recent encounters for this patient. Diagnoses are linked to encounters.")
 
     if "encounters" not in st.session_state:
         st.session_state.encounters = []
 
-    col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns([2, 2, 2, 1, 1])
+    col_e1, col_e2, col_e3, col_e4, col_e5 = st.columns([2, 2, 2, 1, 1], vertical_alignment="bottom")
     with col_e1:
         enc_type = st.selectbox("Encounter Type", ["", "Emergency", "Inpatient", "Outpatient",
                                                      "Observation", "Telehealth"], key="enc_type")
@@ -79,8 +71,7 @@ with st.container(border=True):
     with col_e4:
         enc_los = st.number_input("Length of Stay (days)", value=0, min_value=0, key="enc_los")
     with col_e5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_enc", use_container_width=True):
+        if st.button(":material/add: Add", key="add_enc", width="stretch"):
             if enc_type and enc_dept:
                 st.session_state.encounters.append({
                     "encounter_id": f"E{random.randint(100000, 999999)}",
@@ -106,9 +97,9 @@ with st.container(border=True):
 # ============================================================
 # SECTION 3: Diagnoses
 # ============================================================
-st.markdown("### Diagnoses")
-
-with st.container(border=True):
+st.write("")
+with st.container(key="card_diagnoses"):
+    render(section_header("🩺", "Diagnoses", "At least one required"))
     st.caption("Add all active diagnoses. Each diagnosis is linked to an encounter.")
 
     icd10_options = [
@@ -137,7 +128,7 @@ with st.container(border=True):
     enc_labels = [f"{e['encounter_id']} — {e['encounter_type']} ({e['encounter_date']})"
                   for e in st.session_state.encounters]
 
-    col_dx1, col_dx2, col_dx3, col_dx4, col_dx5 = st.columns([3, 2, 2, 2, 1])
+    col_dx1, col_dx2, col_dx3, col_dx4, col_dx5 = st.columns([3, 2, 2, 2, 1], vertical_alignment="bottom")
     with col_dx1:
         dx_code = st.selectbox("ICD-10 Code", [""] + [f"{code} — {desc}" for code, desc in icd10_options], key="dx_code")
     with col_dx2:
@@ -147,8 +138,7 @@ with st.container(border=True):
     with col_dx4:
         dx_description = st.text_input("Description (optional)", placeholder="Custom description", key="dx_desc")
     with col_dx5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_dx", use_container_width=True):
+        if st.button(":material/add: Add", key="add_dx", width="stretch"):
             if dx_code and dx_severity:
                 code = dx_code.split(" — ")[0]
                 desc = dx_description or (dx_code.split(" — ")[1] if " — " in dx_code else dx_code)
@@ -179,15 +169,15 @@ with st.container(border=True):
 # ============================================================
 # SECTION 4: Medications
 # ============================================================
-st.markdown("### Medications")
-
-with st.container(border=True):
+st.write("")
+with st.container(key="card_medications"):
+    render(section_header("💊", "Medications"))
     st.caption("Add all current medications for this patient")
 
     if "medications" not in st.session_state:
         st.session_state.medications = []
 
-    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns([2, 2, 2, 1, 1])
+    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns([2, 2, 2, 1, 1], vertical_alignment="bottom")
     with col_m1:
         med_name = st.text_input("Drug Name *", placeholder="e.g., Metformin", key="med_name")
     with col_m2:
@@ -197,8 +187,7 @@ with st.container(border=True):
     with col_m4:
         med_active = st.checkbox("Active", value=True, key="med_active")
     with col_m5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_med", use_container_width=True):
+        if st.button(":material/add: Add", key="add_med", width="stretch"):
             if med_name and med_dosage:
                 st.session_state.medications.append({
                     "drug_name": med_name,
@@ -224,9 +213,9 @@ with st.container(border=True):
 # ============================================================
 # SECTION 5: Lab Results
 # ============================================================
-st.markdown("### Lab Results")
-
-with st.container(border=True):
+st.write("")
+with st.container(key="card_labs"):
+    render(section_header("🔬", "Lab Results"))
     st.caption("Add recent lab results for this patient")
 
     if "labs" not in st.session_state:
@@ -248,7 +237,7 @@ with st.container(border=True):
     ]
     lab_lookup = {name: (unit, ref) for name, unit, ref in lab_options}
 
-    col_l1, col_l2, col_l3, col_l4, col_l5 = st.columns([2, 1, 1, 1, 1])
+    col_l1, col_l2, col_l3, col_l4, col_l5 = st.columns([2, 1, 1, 1, 1], vertical_alignment="bottom")
     with col_l1:
         lab_test = st.selectbox("Test Name", [""] + [l[0] for l in lab_options], key="lab_test")
     with col_l2:
@@ -259,8 +248,7 @@ with st.container(border=True):
     with col_l4:
         lab_date = st.date_input("Lab Date", key="lab_date")
     with col_l5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_lab", use_container_width=True):
+        if st.button(":material/add: Add", key="add_lab", width="stretch"):
             if lab_test and lab_value:
                 ref = lab_lookup.get(lab_test, ("", ""))[1]
                 abnormal = None
@@ -313,15 +301,15 @@ with st.container(border=True):
 # ============================================================
 # SECTION 6: Claims
 # ============================================================
-st.markdown("### Claims")
-
-with st.container(border=True):
+st.write("")
+with st.container(key="card_claims"):
+    render(section_header("📋", "Claims"))
     st.caption("Add insurance claims for this patient")
 
     if "claims" not in st.session_state:
         st.session_state.claims = []
 
-    col_c1, col_c2, col_c3, col_c4, col_c5 = st.columns([2, 1, 1, 2, 1])
+    col_c1, col_c2, col_c3, col_c4, col_c5 = st.columns([2, 1, 1, 2, 1], vertical_alignment="bottom")
     with col_c1:
         claim_type = st.selectbox("Claim Type", ["", "Professional", "Institutional",
                                                    "Pharmacy", "DME"], key="claim_type")
@@ -332,8 +320,7 @@ with st.container(border=True):
     with col_c4:
         claim_date = st.date_input("Claim Date", key="claim_date")
     with col_c5:
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button(":material/add: Add", key="add_claim", use_container_width=True):
+        if st.button(":material/add: Add", key="add_claim", width="stretch"):
             if claim_type and claim_status:
                 st.session_state.claims.append({
                     "claim_type": claim_type,
@@ -363,9 +350,9 @@ with st.container(border=True):
 # ============================================================
 # SECTION 7: Clinical Notes
 # ============================================================
-st.markdown("### Clinical Notes")
-
-with st.container(border=True):
+st.write("")
+with st.container(key="card_notes"):
+    render(section_header("📝", "Clinical Notes"))
     st.caption("Add clinical notes for this patient")
 
     if "notes" not in st.session_state:
@@ -379,7 +366,7 @@ with st.container(border=True):
         note_text = st.text_area("Note Content", height=100,
                                   placeholder="Enter clinical note text here...", key="note_text")
 
-    if st.button(":material/add: Add Note", key="add_note", use_container_width=True):
+    if st.button(":material/add: Add Note", key="add_note", width="stretch"):
         if note_type and note_text:
             st.session_state.notes.append({
                 "note_type": note_type,
@@ -396,6 +383,11 @@ with st.container(border=True):
             if c3.button(":material/delete:", key=f"del_note_{i}"):
                 st.session_state.notes.pop(i)
                 st.rerun()
+
+st.write("")
+render(f'''<div class="card-container">{section_header("⚠️", "Care Gaps", icon_bg="#FFDAD6")}
+<div style="font-size:13px;color:#434655;">Care gaps are computed automatically by the <span class="citation-pill">CARE_GAPS</span>
+rule view from the diagnoses, medications, labs and encounters above. They appear right after saving.</div></div>''')
 
 # ============================================================
 # SUBMIT
@@ -417,11 +409,12 @@ if not st.session_state.get("diagnoses"):
     errors.append("At least one diagnosis is required")
 
 if errors:
-    st.warning("Please fix the following before submitting:")
-    for err in errors:
-        st.markdown(f"- {err}")
+    with st.container(border=True):
+        st.markdown(":orange-badge[:material/checklist: Before saving]")
+        for err in errors:
+            st.markdown(f"- {err}")
 
-with st.expander("Review All Entered Data", expanded=False):
+with st.expander("Review All Entered Data", expanded=False, icon=":material/fact_check:"):
     st.markdown(f"**Name:** {first_name} {last_name}")
     st.markdown(f"**DOB:** {date_of_birth} (Age: {age})")
     st.markdown(f"**Gender:** {gender}")
@@ -438,7 +431,7 @@ with st.expander("Review All Entered Data", expanded=False):
 col_save, col_clear = st.columns(2)
 
 with col_save:
-    if st.button(":material/save: Save Patient", type="primary", use_container_width=True):
+    if st.button(":material/save: Save Patient", type="primary", width="stretch"):
         if errors:
             st.error("Please fix all errors before saving.")
         else:
@@ -531,6 +524,12 @@ with col_save:
                     st.session_state.claims = []
                     st.session_state.notes = []
 
+                    from src.data_loader import get_patient_care_gaps
+                    computed = get_patient_care_gaps(patient_id)
+                    if not computed.empty:
+                        render(section_header("⚠️", f"Computed Care Gaps ({len(computed)})", icon_bg="#FFDAD6"))
+                        render("".join(gap_card(g) for _, g in computed.iterrows()))
+
                     st.markdown("### Next Steps")
                     st.markdown(f"- View patient in **Patient 360** page (search for `{patient_id}`)")
                     st.markdown("- Ask questions in **Clinical Q&A** page")
@@ -542,7 +541,7 @@ with col_save:
                     st.code(traceback.format_exc())
 
 with col_clear:
-    if st.button(":material/refresh: Clear Form", use_container_width=True):
+    if st.button(":material/refresh: Clear Form", width="stretch"):
         for key in ["diagnoses", "medications", "labs", "encounters", "claims", "notes"]:
             st.session_state[key] = []
         st.rerun()
