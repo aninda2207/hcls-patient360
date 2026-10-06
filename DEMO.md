@@ -59,3 +59,7 @@
 - If chart doesn't load: refresh the page
 - If patient not found: use patient ID P00089 (Elizabeth Taylor, HIGH risk)
 - If connection drops: the app will reconnect on next page load
+
+- ## Demo Video
+
+[Watch HCLS Patient 360 Demo on YouTube](YOUR_YOUTUBE_LINK)
