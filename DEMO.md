@@ -62,4 +62,4 @@
 
 - ## Demo Video
 
-[Watch HCLS Patient 360 Demo on YouTube](YOUR_YOUTUBE_LINK)
+[Watch HCLS Patient 360 Demo on YouTube](https://youtu.be/n6w0bc_731A)
