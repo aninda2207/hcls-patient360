@@ -1,7 +1,7 @@
 # HCLS Patient 360 — Hackathon Demo Script (2 Minutes)
 
 ## Setup
-- App URL: http://localhost:8501
+- App URL: https://hcls-patient360-m74hz3rzqbax3cwlmvdirl.streamlit.app/
 - Test patient: Any HIGH risk patient (e.g., P00089 Elizabeth Taylor)
 - Have a sample `.txt` or `.pdf` prescription ready on desktop
 
